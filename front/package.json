@@ -806,7 +806,7 @@
     "react-error-overlay": "^6.1.0",
     "react-is": "^19.0.0",
     "react-map-gl": "^7.1.9",
-    "react-scripts": "^3.0.1",
+    "react-scripts": "^5.0.1",
     "react-transition-group": "^4.4.5",
     "read-pkg": "^2.0.0",
     "read-pkg-up": "^2.0.0",
@@ -981,7 +981,6 @@
     "typed-array-byte-offset": "^1.0.4",
     "typed-array-length": "^1.0.7",
     "typedarray": "^0.0.6",
-    "typescript": "^5.8.2",
     "typewise": "^1.0.3",
     "typewise-core": "^1.2.0",
     "uglify-js": "^3.4.10",
@@ -1086,5 +1085,8 @@
     "eject": "react-scripts eject"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  }
 }
