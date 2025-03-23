@@ -85,7 +85,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                     setCurrentLocation({ lat, lon });
                     setValue(feature.place_name);
                     // Fetch station data from your backend.
-                    const stationData = await fetch(`http://localhost:8000/api/charging-stations`, {
+                    const stationData = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/charging-stations`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ latitude: lat, longitude: lon }),

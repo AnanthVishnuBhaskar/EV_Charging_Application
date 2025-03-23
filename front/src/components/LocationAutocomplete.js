@@ -41,7 +41,7 @@ function LocationAutocomplete({ currentLocation, setCurrentLocation, setStations
                 setCurrentLocation({ lat, lon });
                 setInputValue(newValue.place_name);
                 try {
-                    const stationData = await fetch(`http://localhost:8000/api/charging-stations`, {
+                    const stationData = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/charging-stations`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ latitude: lat, longitude: lon }),
@@ -101,7 +101,7 @@ function LocationAutocomplete({ currentLocation, setCurrentLocation, setStations
                 if (!isNaN(lat) && !isNaN(lon)) {
                     setCurrentLocation({ lat, lon });
                     setInputValue(feature.place_name);
-                    const stationData = await fetch(`http://localhost:8000/api/charging-stations`, {
+                    const stationData = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/charging-stations`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ latitude: lat, longitude: lon }),

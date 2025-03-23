@@ -8,7 +8,10 @@ app = FastAPI()
 # Allow CORS for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://d19pdhrnk2jiwo.cloudfront.net",
+        "https://react-application.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
