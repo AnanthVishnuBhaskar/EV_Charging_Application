@@ -2,6 +2,7 @@
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
+import CloseIcon from '@mui/icons-material/Close';
 import {
     Box,
     Button,
@@ -10,7 +11,7 @@ import {
     CardContent,
     Chip,
     Dialog,
-    DialogActions,
+    DialogActions,  // <-- Ensure this is imported!
     DialogContent,
     DialogContentText,
     DialogTitle,
@@ -22,6 +23,7 @@ import {
     Slider,
     Typography
 } from '@mui/material';
+
 import React, { useMemo, useState } from 'react';
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -135,6 +137,7 @@ function StationList({ stations, currentLocation }) {
         setDetailsOpen(true);
     };
 
+    // Define handleDetailsClose so that the X button and Dialog's onClose can use it.
     const handleDetailsClose = () => {
         setDetailsOpen(false);
     };
@@ -272,7 +275,21 @@ function StationList({ stations, currentLocation }) {
 
             {/* Details Dialog */}
             <Dialog open={detailsOpen} onClose={handleDetailsClose} maxWidth="sm" fullWidth>
-                <DialogTitle>Station Details</DialogTitle>
+                <DialogTitle sx={{ m: 0, p: 2 }}>
+                    Station Details
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleDetailsClose}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent dividers>
                     {selectedStation ? (
                         <>
@@ -281,11 +298,22 @@ function StationList({ stations, currentLocation }) {
                             </Typography>
                             <DialogContentText sx={{ mt: 1 }}>
                                 <strong>Address:</strong>{" "}
-                                {selectedStation.AddressInfo?.AddressLine1 || "N/A"}
-                                {selectedStation.AddressInfo?.Town ? `, ${selectedStation.AddressInfo?.Town}` : ""}
-                                {selectedStation.AddressInfo?.StateOrProvince ? `, ${selectedStation.AddressInfo?.StateOrProvince}` : ""}
-                                {selectedStation.AddressInfo?.Postcode ? `, ${selectedStation.AddressInfo?.Postcode}` : ""}
-                                {selectedStation.AddressInfo?.Country?.Title ? `, ${selectedStation.AddressInfo?.Country.Title}` : ""}
+                                {selectedStation.AddressInfo ? (
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${selectedStation.AddressInfo.Latitude},${selectedStation.AddressInfo.Longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: "blue", textDecoration: "underline" }}
+                                    >
+                                        {`${selectedStation.AddressInfo.AddressLine1 || "N/A"}${selectedStation.AddressInfo.Town ? `, ${selectedStation.AddressInfo.Town}` : ""
+                                            }${selectedStation.AddressInfo.StateOrProvince ? `, ${selectedStation.AddressInfo.StateOrProvince}` : ""
+                                            }${selectedStation.AddressInfo.Postcode ? `, ${selectedStation.AddressInfo.Postcode}` : ""
+                                            }${selectedStation.AddressInfo.Country && selectedStation.AddressInfo.Country.Title ? `, ${selectedStation.AddressInfo.Country.Title}` : ""
+                                            }`}
+                                    </a>
+                                ) : (
+                                    "N/A"
+                                )}
                             </DialogContentText>
                             {selectedStation.UsageCost && (
                                 <DialogContentText sx={{ mt: 1 }}>
@@ -316,18 +344,7 @@ function StationList({ stations, currentLocation }) {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button
-                        onClick={handleDetailsClose}
-                        variant="outlined"
-                        sx={{
-                            textTransform: 'none',
-                            borderColor: 'primary.main',
-                            color: 'primary.main',
-                            '&:hover': { backgroundColor: 'primary.light' },
-                        }}
-                    >
-                        Close
-                    </Button>
+                    {/* Remove the Close button since we now have an X */}
                 </DialogActions>
             </Dialog>
         </Box>

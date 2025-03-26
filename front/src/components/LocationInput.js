@@ -139,10 +139,11 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
-                            <IconButton onClick={onUseCurrentLocation}>
+                            <IconButton onClick={onUseCurrentLocation} sx={{ color: 'white' }}>
                                 <MyLocationIcon />
                             </IconButton>
                         </InputAdornment>
+
                     ),
                 }}
                 sx={{
@@ -153,7 +154,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
             />
 
             {/* Separate Search Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Button
                     variant="contained"
                     onClick={handleSearch}
