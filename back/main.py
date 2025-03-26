@@ -9,6 +9,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:3000",
         "https://d19pdhrnk2jiwo.cloudfront.net",
         "https://react-application.com",
     ],
