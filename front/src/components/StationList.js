@@ -1,8 +1,8 @@
 // src/components/StationList.jsx
+import CloseIcon from '@mui/icons-material/Close';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SortIcon from '@mui/icons-material/Sort';
-import CloseIcon from '@mui/icons-material/Close';
 import {
     Box,
     Button,
@@ -11,7 +11,7 @@ import {
     CardContent,
     Chip,
     Dialog,
-    DialogActions,  // <-- Ensure this is imported!
+    DialogActions, // <-- Ensure this is imported!
     DialogContent,
     DialogContentText,
     DialogTitle,
@@ -159,7 +159,7 @@ function StationList({ stations, currentLocation }) {
                     <Box display="flex" alignItems="center" gap={1}>
                         <Slider
                             value={selectedDistance === Infinity ? computedMax : selectedDistance}
-                            onChange={(e, newValue) => setSelectedDistance(newValue)}
+                            onChange={(_e, newValue) => setSelectedDistance(newValue)}
                             valueLabelDisplay="on"
                             min={computedMin}
                             max={computedMax}

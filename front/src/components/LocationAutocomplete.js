@@ -1,12 +1,12 @@
 // src/components/LocationAutocomplete.jsx
-import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, Paper, InputAdornment, IconButton, Box, Button } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import SearchIcon from '@mui/icons-material/Search';
+import { Autocomplete, Box, Button, IconButton, InputAdornment, Paper, TextField } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 
 const MAPBOX_TOKEN = "YOUR_MAPBOX_TOKEN"; // Replace with your valid token
 
-function LocationAutocomplete({ currentLocation, setCurrentLocation, setStations }) {
+function LocationAutocomplete({ setCurrentLocation, setStations }) {
     const [inputValue, setInputValue] = useState('');
     const [options, setOptions] = useState([]);
 

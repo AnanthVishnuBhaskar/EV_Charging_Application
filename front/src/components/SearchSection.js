@@ -1,7 +1,7 @@
 // src/components/SearchSection.jsx
-import React from 'react';
-import { Box, Paper, Typography, Button } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import { Box, Button, Paper, Typography } from '@mui/material';
+import React from 'react';
 import LocationInput from './LocationInput'; // your existing location input
 
 function SearchSection({ currentLocation, setCurrentLocation, setStations, onLocateMe }) {

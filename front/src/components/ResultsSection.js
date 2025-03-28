@@ -1,9 +1,9 @@
 // src/components/ResultsSection.jsx
-import React, { useState } from 'react';
-import { Box, Typography, Chip, Grid, Card, CardContent, CardActions, Button } from '@mui/material';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
+import { Box, Button, Card, CardActions, CardContent, Chip, Grid, Typography } from '@mui/material';
+import React from 'react';
 
-function ResultsSection({ stations, currentLocation, distanceValue, typeValue }) {
+function ResultsSection({ stations }) {
     // If you need a dialog or additional state, manage it here
 
     return (
