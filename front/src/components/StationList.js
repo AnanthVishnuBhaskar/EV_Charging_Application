@@ -3,30 +3,31 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BusinessIcon from '@mui/icons-material/Business';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import TuneIcon from '@mui/icons-material/Tune';
+
 import {
     Box,
     Button,
     Card,
-    CardActions,
     CardContent,
     Checkbox,
-    Collapse, FormControlLabel,
+    Collapse,
+    Divider,
+    FormControlLabel,
     Grid,
-    IconButton, Paper,
-    Popover,
-    Slider, Typography
+    IconButton, Popover,
+    Slider,
+    Typography
 } from '@mui/material';
 import React, { useMemo, useState } from 'react';
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
     const toRad = (x) => (x * Math.PI) / 180;
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
@@ -39,12 +40,21 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 function StationList({ stations, currentLocation }) {
     const [expandedStationId, setExpandedStationId] = useState(null);
     const [ascending, setAscending] = useState(true);
-    // Fixed maximum value for distance filter (in miles)
+    // Fixed maximum for distance filter in miles (a more meaningful value)
     const fixedMax = 100;
-    const [selectedDistance, setSelectedDistance] = useState(fixedMax);
-    // Multi-select filtering for station types
-    const [selectedTypes, setSelectedTypes] = useState([]);
-    // For filter popover
+
+    // filterValues holds current changes in the popover
+    const [filterValues, setFilterValues] = useState({
+        distance: fixedMax,
+        types: []
+    });
+    // appliedFilters are used for filtering the stations displayed
+    const [appliedFilters, setAppliedFilters] = useState({
+        distance: fixedMax,
+        types: []
+    });
+
+    // For the filter popover
     const [anchorElFilter, setAnchorElFilter] = useState(null);
 
     const toggleSortOrder = () => {
@@ -59,10 +69,25 @@ function StationList({ stations, currentLocation }) {
         setAnchorElFilter(null);
     };
 
+    // Update temporary distance filter in popover
+    const handleDistanceChange = (_e, newValue) => {
+        setFilterValues((prev) => ({ ...prev, distance: newValue }));
+    };
+
+    // Toggle type selection in temporary state
     const handleTypeToggle = (type) => {
-        setSelectedTypes((prev) =>
-            prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-        );
+        setFilterValues((prev) => ({
+            ...prev,
+            types: prev.types.includes(type)
+                ? prev.types.filter((t) => t !== type)
+                : [...prev.types, type]
+        }));
+    };
+
+    // Apply filters when "Apply" is clicked
+    const handleApplyFilters = () => {
+        setAppliedFilters(filterValues);
+        handleFilterClose();
     };
 
     const stationTypes = useMemo(() => {
@@ -88,41 +113,50 @@ function StationList({ stations, currentLocation }) {
                 bLat !== undefined &&
                 bLon !== undefined
             ) {
-                // Compute distance in km then convert to miles
-                const aDistance = haversineDistance(currentLocation.lat, currentLocation.lon, aLat, aLon) * 0.621371;
-                const bDistance = haversineDistance(currentLocation.lat, currentLocation.lon, bLat, bLon) * 0.621371;
+                // Calculate distance in km and convert to miles
+                const aDistance =
+                    haversineDistance(currentLocation.lat, currentLocation.lon, aLat, aLon) *
+                    0.621371;
+                const bDistance =
+                    haversineDistance(currentLocation.lat, currentLocation.lon, bLat, bLon) *
+                    0.621371;
                 return ascending ? aDistance - bDistance : bDistance - aDistance;
             }
             return 0;
         });
     }, [stations, currentLocation, ascending]);
 
-    // We now use fixed values for the slider
+    // Using fixed slider values for distance filtering (in miles)
     const computedMin = 0;
     const computedMax = fixedMax;
-    const effectiveDistance = selectedDistance;
+    const effectiveDistance = appliedFilters.distance;
 
+    // Filter stations using applied filters (not the temporary ones)
     const filteredStations = useMemo(() => {
         if (!currentLocation) return sortedStations;
         return sortedStations.filter((station) => {
             const lat = station.AddressInfo?.Latitude;
             const lon = station.AddressInfo?.Longitude;
             if (lat !== undefined && lon !== undefined) {
-                // Compute distance in km then convert to miles for filtering
                 const distanceKm = haversineDistance(currentLocation.lat, currentLocation.lon, lat, lon);
                 const distanceMiles = distanceKm * 0.621371;
                 const meetsDistance = distanceMiles <= effectiveDistance;
                 const meetsType =
-                    selectedTypes.length === 0 ||
-                    (station.UsageType && selectedTypes.includes(station.UsageType.Title));
+                    appliedFilters.types.length === 0 ||
+                    (station.UsageType && appliedFilters.types.includes(station.UsageType.Title));
                 return meetsDistance && meetsType;
             }
             return false;
         });
-    }, [sortedStations, currentLocation, effectiveDistance, selectedTypes]);
+    }, [sortedStations, currentLocation, effectiveDistance, appliedFilters.types]);
 
-    const handleCardClick = (stationId) => {
-        setExpandedStationId((prev) => (prev === stationId ? null : stationId));
+    // Use onMouseEnter/onMouseLeave to expand/collapse card on hover
+    const handleMouseEnter = (stationId) => {
+        setExpandedStationId(stationId);
+    };
+
+    const handleMouseLeave = () => {
+        setExpandedStationId(null);
     };
 
     // Popover open state for filters
@@ -132,39 +166,30 @@ function StationList({ stations, currentLocation }) {
     return (
         <Box sx={{ p: 2 }}>
             {/* Filters, Sort, and Filter Popover Trigger */}
-            <Paper
+
+            <Box
                 sx={{
-                    p: 1,
-                    mb: 2,
-                    background: 'rgba(0,0,0,0.05)',
-                    borderRadius: 1,
-                    border: '1px solid #ccc',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 3,
+                    flexWrap: 'wrap',
                 }}
             >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 3,
-                        flexWrap: 'wrap',
-                    }}
-                >
-                    <IconButton onClick={handleFilterClick} sx={{ p: 1 }}>
-                        <TuneIcon sx={{ color: 'primary.main', fontSize: 28 }} />
-                    </IconButton>
-                    <IconButton onClick={toggleSortOrder} sx={{ p: 1 }}>
-                        <SwapVertIcon
-                            sx={{
-                                transform: ascending ? 'rotate(0deg)' : 'rotate(180deg)',
-                                transition: 'transform 0.3s',
-                                color: 'primary.main',
-                                fontSize: 28,
-                            }}
-                        />
-                    </IconButton>
-                </Box>
-            </Paper>
+                <IconButton onClick={handleFilterClick} sx={{ p: 1 }}>
+                    <TuneIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                </IconButton>
+                <IconButton onClick={toggleSortOrder} sx={{ p: 1 }}>
+                    <SwapVertIcon
+                        sx={{
+                            transform: ascending ? 'rotate(0deg)' : 'rotate(180deg)',
+                            transition: 'transform 0.3s',
+                            color: 'primary.main',
+                            fontSize: 28,
+                        }}
+                    />
+                </IconButton>
+            </Box>
 
             {/* Filter Popover */}
             <Popover
@@ -183,11 +208,11 @@ function StationList({ stations, currentLocation }) {
             >
                 <Box sx={{ p: 2, width: 300 }}>
                     <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                        Distance Filter
+                        Distance
                     </Typography>
                     <Slider
-                        value={selectedDistance}
-                        onChange={(_e, newValue) => setSelectedDistance(newValue)}
+                        value={filterValues.distance}
+                        onChange={handleDistanceChange}
                         valueLabelDisplay="auto"
                         valueLabelFormat={(value) => `${value} miles`}
                         min={computedMin}
@@ -205,32 +230,39 @@ function StationList({ stations, currentLocation }) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontSize: '0.75rem',
-                                // Adjust the position to prevent clipping at the ends
                                 transform: 'translateX(-50%) translateY(-120%) scale(1)',
-                                // Remove any override that hides the pointer:
-                                // (if you previously set &:before { display: 'none' }, remove it)
                             },
                         }}
                     />
 
-                    <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
-                        Type Filters
+                    <Divider sx={{ my: 2 }} />
+
+                    <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                        Type
                     </Typography>
                     {stationTypes.map((type) => (
                         <FormControlLabel
                             key={type}
                             control={
                                 <Checkbox
-                                    checked={selectedTypes.includes(type)}
+                                    checked={filterValues.types.includes(type)}
                                     onChange={() => handleTypeToggle(type)}
                                     color="primary"
                                 />
                             }
                             label={type}
+                            sx={{
+                                alignItems: 'flex-start',
+                                '& .MuiFormControlLabel-label': {
+                                    marginTop: '0.2em',
+                                    lineHeight: '1.2',
+                                },
+                            }}
                         />
                     ))}
+
                     <Box sx={{ mt: 2, textAlign: 'right' }}>
-                        <Button size="small" onClick={handleFilterClose}>
+                        <Button size="small" onClick={handleApplyFilters}>
                             Apply
                         </Button>
                     </Box>
@@ -263,9 +295,10 @@ function StationList({ stations, currentLocation }) {
                                     backgroundColor: 'background.paper',
                                     borderRadius: 2,
                                     boxShadow: 3,
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
                                 }}
-                                onClick={() => handleCardClick(stationId)}
+                                onMouseEnter={() => handleMouseEnter(stationId)}
+                                onMouseLeave={handleMouseLeave}
                             >
                                 <CardContent>
                                     <Box display="flex" alignItems="center" mb={1}>
@@ -284,7 +317,7 @@ function StationList({ stations, currentLocation }) {
                                         </Typography>
                                     )}
                                 </CardContent>
-                                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                <Collapse in={isExpanded} timeout={700} unmountOnExit>
                                     <CardContent sx={{ backgroundColor: '#f9f9f9', borderTop: '1px solid #ddd' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                             <LocationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
@@ -368,21 +401,6 @@ function StationList({ stations, currentLocation }) {
                                         )}
                                     </CardContent>
                                 </Collapse>
-                                <CardActions sx={{ justifyContent: 'flex-end' }}>
-                                    <IconButton
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleCardClick(stationId);
-                                        }}
-                                    >
-                                        <ExpandMoreIcon
-                                            sx={{
-                                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                transition: 'transform 0.3s',
-                                            }}
-                                        />
-                                    </IconButton>
-                                </CardActions>
                             </Card>
                         </Grid>
                     );

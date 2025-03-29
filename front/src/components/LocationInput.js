@@ -1,3 +1,4 @@
+// src/components/LocationInput.jsx
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
 import {
@@ -18,8 +19,9 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoiYW5hbnRobWFwIiwiYSI6ImNtN2s1aHg3MTBlcmQyaXB6Y29
 function LocationInput({ currentLocation, setCurrentLocation, setStations, onUseCurrentLocation }) {
     const [value, setValue] = useState('');
     const [suggestions, setSuggestions] = useState([]);
+    const [error, setError] = useState(false);
 
-    // When currentLocation changes and the input is empty, use reverse geocoding to populate the input.
+    // Reverse geocoding when currentLocation changes and input is empty.
     useEffect(() => {
         async function fetchReverseGeocode() {
             if (currentLocation && value === '') {
@@ -38,7 +40,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
         fetchReverseGeocode();
     }, [currentLocation, value]);
 
-    // Fetch autocomplete suggestions whenever input changes.
+    // Autocomplete suggestions.
     useEffect(() => {
         async function fetchSuggestions() {
             if (value.trim().length === 0) {
@@ -59,21 +61,23 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
         fetchSuggestions();
     }, [value]);
 
-    // When input is cleared, reset suggestions and clear location/stations.
+    // Reset suggestions and location when input is cleared.
     useEffect(() => {
         if (value === '') {
             setSuggestions([]);
             setCurrentLocation(null);
             setStations([]);
+            setError(false);
         }
     }, [value, setCurrentLocation, setStations]);
 
-    // Handler for Search button: perform forward geocoding.
+    // Handler for search action.
     const handleSearch = async () => {
         if (value.trim().length === 0) {
-            alert("Please enter a location.");
+            setError(true);
             return;
         }
+        setError(false);
         const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${MAPBOX_TOKEN}`;
         try {
             const response = await fetch(geocodeUrl);
@@ -110,7 +114,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
         handleSearch();
     };
 
-    // When a suggestion is clicked, update input (without triggering search).
+    // When a suggestion is clicked, update the input.
     const handleSuggestionClick = (suggestion) => {
         setValue(suggestion.place_name);
         setSuggestions([]);
@@ -119,6 +123,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
     return (
         <Box
             component="form"
+            noValidate
             onSubmit={handleSubmit}
             sx={{
                 position: 'relative',
@@ -135,7 +140,12 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                 label="Search Location (City, Address)"
                 variant="outlined"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                    setValue(e.target.value);
+                    if (error) setError(false);
+                }}
+                error={error}
+                helperText={error ? "Location is required" : ""}
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
@@ -151,7 +161,6 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                     '&:focus-within': { boxShadow: '0 0 10px rgba(0,0,0,0.3)' },
                 }}
             />
-
 
             {/* Separate Search Button */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
