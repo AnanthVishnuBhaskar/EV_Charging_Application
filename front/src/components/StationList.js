@@ -1,34 +1,32 @@
 // src/components/StationList.jsx
-import CloseIcon from '@mui/icons-material/Close';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import BusinessIcon from '@mui/icons-material/Business';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import SortIcon from '@mui/icons-material/Sort';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import RateReviewIcon from '@mui/icons-material/RateReview';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
+import TuneIcon from '@mui/icons-material/Tune';
 import {
     Box,
     Button,
     Card,
     CardActions,
     CardContent,
-    Chip,
-    Dialog,
-    DialogActions, // <-- Ensure this is imported!
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
+    Checkbox,
+    Collapse, FormControlLabel,
     Grid,
-    IconButton,
-    Menu,
-    MenuItem,
-    Paper,
-    Slider,
-    Typography
+    IconButton, Paper,
+    Popover,
+    Slider, Typography
 } from '@mui/material';
-
 import React, { useMemo, useState } from 'react';
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
     const toRad = (x) => (x * Math.PI) / 180;
-    const R = 6371;
+    const R = 6371; // Earth's radius in km
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
@@ -39,30 +37,32 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 function StationList({ stations, currentLocation }) {
-    const [selectedStation, setSelectedStation] = useState(null);
-    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [expandedStationId, setExpandedStationId] = useState(null);
     const [ascending, setAscending] = useState(true);
-
-    // Set default filter distance to Infinity (i.e., no filtering)
-    const [selectedDistance, setSelectedDistance] = useState(Infinity);
-    const [selectedType, setSelectedType] = useState("All");
-    const [anchorElType, setAnchorElType] = useState(null);
+    // Fixed maximum value for distance filter (in miles)
+    const fixedMax = 100;
+    const [selectedDistance, setSelectedDistance] = useState(fixedMax);
+    // Multi-select filtering for station types
+    const [selectedTypes, setSelectedTypes] = useState([]);
+    // For filter popover
+    const [anchorElFilter, setAnchorElFilter] = useState(null);
 
     const toggleSortOrder = () => {
         setAscending((prev) => !prev);
     };
 
-    const handleTypeChipClick = (event) => {
-        setAnchorElType(event.currentTarget);
+    const handleFilterClick = (event) => {
+        setAnchorElFilter(event.currentTarget);
     };
 
-    const handleTypeMenuClose = () => {
-        setAnchorElType(null);
+    const handleFilterClose = () => {
+        setAnchorElFilter(null);
     };
 
-    const handleTypeSelect = (value) => {
-        setSelectedType(value);
-        handleTypeMenuClose();
+    const handleTypeToggle = (type) => {
+        setSelectedTypes((prev) =>
+            prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+        );
     };
 
     const stationTypes = useMemo(() => {
@@ -88,32 +88,19 @@ function StationList({ stations, currentLocation }) {
                 bLat !== undefined &&
                 bLon !== undefined
             ) {
-                const aDistance = haversineDistance(currentLocation.lat, currentLocation.lon, aLat, aLon);
-                const bDistance = haversineDistance(currentLocation.lat, currentLocation.lon, bLat, bLon);
+                // Compute distance in km then convert to miles
+                const aDistance = haversineDistance(currentLocation.lat, currentLocation.lon, aLat, aLon) * 0.621371;
+                const bDistance = haversineDistance(currentLocation.lat, currentLocation.lon, bLat, bLon) * 0.621371;
                 return ascending ? aDistance - bDistance : bDistance - aDistance;
             }
             return 0;
         });
     }, [stations, currentLocation, ascending]);
 
-    const distances = useMemo(() => {
-        if (!currentLocation) return [];
-        return stations
-            .map((station) => {
-                const lat = station.AddressInfo?.Latitude;
-                const lon = station.AddressInfo?.Longitude;
-                if (lat !== undefined && lon !== undefined) {
-                    return haversineDistance(currentLocation.lat, currentLocation.lon, lat, lon);
-                }
-                return null;
-            })
-            .filter((d) => d !== null);
-    }, [stations, currentLocation]);
-
-    const computedMin = distances.length > 0 ? Math.floor(Math.min(...distances)) : 0;
-    const computedMax = distances.length > 0 ? Math.ceil(Math.max(...distances)) : 100;
-    // effectiveDistance: if slider is set to Infinity (default), we use computedMax so that all results show.
-    const effectiveDistance = selectedDistance === Infinity ? computedMax : selectedDistance;
+    // We now use fixed values for the slider
+    const computedMin = 0;
+    const computedMax = fixedMax;
+    const effectiveDistance = selectedDistance;
 
     const filteredStations = useMemo(() => {
         if (!currentLocation) return sortedStations;
@@ -121,30 +108,30 @@ function StationList({ stations, currentLocation }) {
             const lat = station.AddressInfo?.Latitude;
             const lon = station.AddressInfo?.Longitude;
             if (lat !== undefined && lon !== undefined) {
-                const distance = haversineDistance(currentLocation.lat, currentLocation.lon, lat, lon);
-                const meetsDistance = distance <= effectiveDistance;
+                // Compute distance in km then convert to miles for filtering
+                const distanceKm = haversineDistance(currentLocation.lat, currentLocation.lon, lat, lon);
+                const distanceMiles = distanceKm * 0.621371;
+                const meetsDistance = distanceMiles <= effectiveDistance;
                 const meetsType =
-                    selectedType === "All" ||
-                    (station.UsageType && station.UsageType.Title === selectedType);
+                    selectedTypes.length === 0 ||
+                    (station.UsageType && selectedTypes.includes(station.UsageType.Title));
                 return meetsDistance && meetsType;
             }
             return false;
         });
-    }, [sortedStations, currentLocation, effectiveDistance, selectedType]);
+    }, [sortedStations, currentLocation, effectiveDistance, selectedTypes]);
 
-    const handleViewDetails = (station) => {
-        setSelectedStation(station);
-        setDetailsOpen(true);
+    const handleCardClick = (stationId) => {
+        setExpandedStationId((prev) => (prev === stationId ? null : stationId));
     };
 
-    // Define handleDetailsClose so that the X button and Dialog's onClose can use it.
-    const handleDetailsClose = () => {
-        setDetailsOpen(false);
-    };
+    // Popover open state for filters
+    const filterPopoverOpen = Boolean(anchorElFilter);
+    const filterPopoverId = filterPopoverOpen ? 'filter-popover' : undefined;
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* Filters & Sort Section */}
+            {/* Filters, Sort, and Filter Popover Trigger */}
             <Paper
                 sx={{
                     p: 1,
@@ -154,61 +141,101 @@ function StationList({ stations, currentLocation }) {
                     border: '1px solid #ccc',
                 }}
             >
-                <Box sx={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'center' }}>
-                    {/* Distance Slider with Value Label as a Blob */}
-                    <Box display="flex" alignItems="center" gap={1}>
-                        <Slider
-                            value={selectedDistance === Infinity ? computedMax : selectedDistance}
-                            onChange={(_e, newValue) => setSelectedDistance(newValue)}
-                            valueLabelDisplay="on"
-                            min={computedMin}
-                            max={computedMax}
-                            step={1}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 3,
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <IconButton onClick={handleFilterClick} sx={{ p: 1 }}>
+                        <TuneIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                    </IconButton>
+                    <IconButton onClick={toggleSortOrder} sx={{ p: 1 }}>
+                        <SwapVertIcon
                             sx={{
-                                width: 120,
+                                transform: ascending ? 'rotate(0deg)' : 'rotate(180deg)',
+                                transition: 'transform 0.3s',
                                 color: 'primary.main',
-                                '& .MuiSlider-valueLabel': {
-                                    backgroundColor: 'primary.main',
-                                    borderRadius: '50%',
-                                    color: 'white',
-                                },
+                                fontSize: 28,
                             }}
                         />
-                    </Box>
-                    {/* Type Filter Chip */}
-                    <Chip
-                        label={`Type: ${selectedType}`}
-                        onClick={handleTypeChipClick}
-                        size="small"
-                        color={selectedType !== "All" ? "primary" : "default"}
-                        sx={{
-                            textTransform: 'none',
-                            cursor: 'pointer',
-                            ...(selectedType !== "All" && {
-                                backgroundColor: 'primary.main',
-                                color: 'white',
-                            }),
-                        }}
-                        icon={<FilterListIcon fontSize="small" />}
-                    />
-                    <Menu
-                        anchorEl={anchorElType}
-                        open={Boolean(anchorElType)}
-                        onClose={handleTypeMenuClose}
-                    >
-                        <MenuItem onClick={() => handleTypeSelect("All")}>All</MenuItem>
-                        {stationTypes.map((type) => (
-                            <MenuItem key={type} onClick={() => handleTypeSelect(type)}>
-                                {type}
-                            </MenuItem>
-                        ))}
-                    </Menu>
-                    {/* Sort Button */}
-                    <IconButton onClick={toggleSortOrder}>
-                        <SortIcon />
                     </IconButton>
                 </Box>
             </Paper>
+
+            {/* Filter Popover */}
+            <Popover
+                id={filterPopoverId}
+                open={filterPopoverOpen}
+                anchorEl={anchorElFilter}
+                onClose={handleFilterClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center',
+                }}
+            >
+                <Box sx={{ p: 2, width: 300 }}>
+                    <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                        Distance Filter
+                    </Typography>
+                    <Slider
+                        value={selectedDistance}
+                        onChange={(_e, newValue) => setSelectedDistance(newValue)}
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(value) => `${value} miles`}
+                        min={computedMin}
+                        max={computedMax}
+                        step={1}
+                        sx={{
+                            color: 'primary.main',
+                            '& .MuiSlider-valueLabel': {
+                                backgroundColor: 'primary.main',
+                                borderRadius: '50%',
+                                color: 'white',
+                                width: 32,
+                                height: 32,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                // Adjust the position to prevent clipping at the ends
+                                transform: 'translateX(-50%) translateY(-120%) scale(1)',
+                                // Remove any override that hides the pointer:
+                                // (if you previously set &:before { display: 'none' }, remove it)
+                            },
+                        }}
+                    />
+
+                    <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                        Type Filters
+                    </Typography>
+                    {stationTypes.map((type) => (
+                        <FormControlLabel
+                            key={type}
+                            control={
+                                <Checkbox
+                                    checked={selectedTypes.includes(type)}
+                                    onChange={() => handleTypeToggle(type)}
+                                    color="primary"
+                                />
+                            }
+                            label={type}
+                        />
+                    ))}
+                    <Box sx={{ mt: 2, textAlign: 'right' }}>
+                        <Button size="small" onClick={handleFilterClose}>
+                            Apply
+                        </Button>
+                    </Box>
+                </Box>
+            </Popover>
 
             {/* Station Cards */}
             <Grid container spacing={2}>
@@ -224,8 +251,11 @@ function StationList({ stations, currentLocation }) {
                         distanceMiles = distanceKm * 0.621371;
                     }
 
+                    const stationId = station.ID || station.AddressInfo?.ID;
+                    const isExpanded = stationId === expandedStationId;
+
                     return (
-                        <Grid item xs={12} sm={6} md={4} key={station.ID || station.AddressInfo?.ID}>
+                        <Grid item xs={12} sm={6} md={4} key={stationId}>
                             <Card
                                 variant="outlined"
                                 sx={{
@@ -233,18 +263,20 @@ function StationList({ stations, currentLocation }) {
                                     backgroundColor: 'background.paper',
                                     borderRadius: 2,
                                     boxShadow: 3,
+                                    cursor: 'pointer'
                                 }}
+                                onClick={() => handleCardClick(stationId)}
                             >
                                 <CardContent>
                                     <Box display="flex" alignItems="center" mb={1}>
                                         <ElectricCarIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                                             {title}
                                         </Typography>
                                     </Box>
                                     {distanceKm !== null ? (
                                         <Typography variant="body2" color="text.secondary">
-                                            Distance: {distanceKm.toFixed(2)} km / {distanceMiles.toFixed(2)} miles
+                                            Distance: {distanceMiles.toFixed(2)} miles
                                         </Typography>
                                     ) : (
                                         <Typography variant="body2" color="text.secondary">
@@ -252,101 +284,110 @@ function StationList({ stations, currentLocation }) {
                                         </Typography>
                                     )}
                                 </CardContent>
-                                <CardActions>
-                                    <Button
-                                        size="small"
-                                        onClick={() => handleViewDetails(station)}
-                                        variant="contained"
-                                        sx={{
-                                            backgroundColor: 'primary.main',
-                                            '&:hover': { backgroundColor: 'primary.dark' },
-                                            textTransform: 'none',
-                                            borderRadius: '50px',
+                                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                    <CardContent sx={{ backgroundColor: '#f9f9f9', borderTop: '1px solid #ddd' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                            <LocationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                            <Typography variant="body2">
+                                                <a
+                                                    href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: "blue", textDecoration: "underline" }}
+                                                >
+                                                    {station.AddressInfo
+                                                        ? `${station.AddressInfo.AddressLine1 || "N/A"}${station.AddressInfo.Town ? `, ${station.AddressInfo.Town}` : ""}${station.AddressInfo.StateOrProvince ? `, ${station.AddressInfo.StateOrProvince}` : ""}${station.AddressInfo.Postcode ? `, ${station.AddressInfo.Postcode}` : ""}${station.AddressInfo.Country && station.AddressInfo.Country.Title ? `, ${station.AddressInfo.Country.Title}` : ""}`
+                                                        : "N/A"}
+                                                </a>
+                                            </Typography>
+                                        </Box>
+                                        {station.OpeningTimes && station.OpeningTimes.length > 0 && (
+                                            <Box sx={{ mt: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                                    <AccessTimeIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                        Timings:
+                                                    </Typography>
+                                                </Box>
+                                                {station.OpeningTimes.map((time, index) => (
+                                                    <Typography key={index} variant="body2" sx={{ ml: 2 }}>
+                                                        {time.DayOfWeek}: {time.OpeningTime} - {time.ClosingTime}
+                                                    </Typography>
+                                                ))}
+                                            </Box>
+                                        )}
+                                        {station.Reviews && station.Reviews.length > 0 && (
+                                            <Box sx={{ mt: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                                    <RateReviewIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                        Reviews:
+                                                    </Typography>
+                                                </Box>
+                                                {station.Reviews.map((review, index) => (
+                                                    <Typography key={index} variant="body2" sx={{ ml: 2 }}>
+                                                        {review}
+                                                    </Typography>
+                                                ))}
+                                            </Box>
+                                        )}
+                                        {station.UsageCost && (
+                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                                <MonetizationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                                <Typography variant="body2">
+                                                    {station.UsageCost}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        {station.OperatorInfo && (
+                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                                <BusinessIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                                <Typography variant="body2">
+                                                    {station.OperatorInfo.WebsiteURL ? (
+                                                        <a
+                                                            href={station.OperatorInfo.WebsiteURL}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            style={{ color: "blue", textDecoration: "underline" }}
+                                                        >
+                                                            {station.OperatorInfo.Title}
+                                                        </a>
+                                                    ) : (
+                                                        station.OperatorInfo.Title || "N/A"
+                                                    )}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        {station.GeneralComments && (
+                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                                <ChatBubbleIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                                <Typography variant="body2">
+                                                    {station.GeneralComments}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </CardContent>
+                                </Collapse>
+                                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                                    <IconButton
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCardClick(stationId);
                                         }}
                                     >
-                                        View Details
-                                    </Button>
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                transition: 'transform 0.3s',
+                                            }}
+                                        />
+                                    </IconButton>
                                 </CardActions>
                             </Card>
                         </Grid>
                     );
                 })}
             </Grid>
-
-            {/* Details Dialog */}
-            <Dialog open={detailsOpen} onClose={handleDetailsClose} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ m: 0, p: 2 }}>
-                    Station Details
-                    <IconButton
-                        aria-label="close"
-                        onClick={handleDetailsClose}
-                        sx={{
-                            position: 'absolute',
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent dividers>
-                    {selectedStation ? (
-                        <>
-                            <Typography variant="h6">
-                                {selectedStation.AddressInfo?.Title || "Unknown Station"}
-                            </Typography>
-                            <DialogContentText sx={{ mt: 1 }}>
-                                <strong>Address:</strong>{" "}
-                                {selectedStation.AddressInfo ? (
-                                    <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${selectedStation.AddressInfo.Latitude},${selectedStation.AddressInfo.Longitude}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ color: "blue", textDecoration: "underline" }}
-                                    >
-                                        {`${selectedStation.AddressInfo.AddressLine1 || "N/A"}${selectedStation.AddressInfo.Town ? `, ${selectedStation.AddressInfo.Town}` : ""
-                                            }${selectedStation.AddressInfo.StateOrProvince ? `, ${selectedStation.AddressInfo.StateOrProvince}` : ""
-                                            }${selectedStation.AddressInfo.Postcode ? `, ${selectedStation.AddressInfo.Postcode}` : ""
-                                            }${selectedStation.AddressInfo.Country && selectedStation.AddressInfo.Country.Title ? `, ${selectedStation.AddressInfo.Country.Title}` : ""
-                                            }`}
-                                    </a>
-                                ) : (
-                                    "N/A"
-                                )}
-                            </DialogContentText>
-                            {selectedStation.UsageCost && (
-                                <DialogContentText sx={{ mt: 1 }}>
-                                    <strong>Pricing:</strong> {selectedStation.UsageCost}
-                                </DialogContentText>
-                            )}
-                            {selectedStation.OperatorInfo && (
-                                <DialogContentText sx={{ mt: 1 }}>
-                                    <strong>Operator:</strong> {selectedStation.OperatorInfo.Title || "N/A"}
-                                    {selectedStation.OperatorInfo.WebsiteURL && (
-                                        <>
-                                            {" "}
-                                            (<a href={selectedStation.OperatorInfo.WebsiteURL} target="_blank" rel="noopener noreferrer">
-                                                Website
-                                            </a>)
-                                        </>
-                                    )}
-                                </DialogContentText>
-                            )}
-                            {selectedStation.GeneralComments && (
-                                <DialogContentText sx={{ mt: 1 }}>
-                                    <strong>Comments:</strong> {selectedStation.GeneralComments}
-                                </DialogContentText>
-                            )}
-                        </>
-                    ) : (
-                        <DialogContentText>Loading station details...</DialogContentText>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    {/* Remove the Close button since we now have an X */}
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 }
