@@ -3,6 +3,8 @@ import { Box, Container, Paper, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import LocationInput from './components/LocationInput';
 import StationList from './components/StationList';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+
 
 function App() {
   const [currentLocation, setCurrentLocation] = useState(null);

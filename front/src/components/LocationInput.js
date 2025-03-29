@@ -1,4 +1,4 @@
-import MyLocationIcon from '@mui/icons-material/MyLocation';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
 import {
     Box,
@@ -139,11 +139,10 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
-                            <IconButton onClick={onUseCurrentLocation} sx={{ color: 'white' }}>
-                                <MyLocationIcon />
+                            <IconButton onClick={onUseCurrentLocation} sx={{ color: '#4CAF50' }}>
+                                <LocationOnIcon />
                             </IconButton>
                         </InputAdornment>
-
                     ),
                 }}
                 sx={{
@@ -152,6 +151,7 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                     '&:focus-within': { boxShadow: '0 0 10px rgba(0,0,0,0.3)' },
                 }}
             />
+
 
             {/* Separate Search Button */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>

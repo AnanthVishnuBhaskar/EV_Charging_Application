@@ -1,25 +1,24 @@
 // ./theme.js
 import { createTheme } from '@mui/material/styles';
 
-const fluorescentTheme = createTheme({
+const sustainableTheme = createTheme({
     palette: {
         mode: 'light',
         primary: {
-            // A bright neon green
-            main: '#39FF14',
+            // A sustainable green
+            main: '#4CAF50',
         },
         secondary: {
-            // For example, a contrasting bright pink
+            // Optionally, a contrasting accent; adjust if needed.
             main: '#FF1493',
         },
-        // Optionally adjust the background to enhance the fluorescent look.
         background: {
-            default: '#000000', // Dark background to make fluorescent colors pop
-            paper: '#222222',
+            default: '#FFFFFF', // Plain white background
+            paper: '#FFFFFF',
         },
         text: {
-            primary: '#FFFFFF',
-            secondary: '#CCCCCC',
+            primary: '#333333', // Dark text for good contrast on white
+            secondary: '#555555',
         },
     },
     typography: {
@@ -27,4 +26,4 @@ const fluorescentTheme = createTheme({
     },
 });
 
-export default fluorescentTheme;
+export default sustainableTheme;
