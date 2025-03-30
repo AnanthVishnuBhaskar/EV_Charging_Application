@@ -5,7 +5,8 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import RateReviewIcon from '@mui/icons-material/RateReview';
+import ReviewsIcon from '@mui/icons-material/Reviews';
+import StraightenIcon from '@mui/icons-material/Straighten';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import TuneIcon from '@mui/icons-material/Tune';
 
@@ -40,15 +41,14 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 function StationList({ stations, currentLocation }) {
     const [expandedStationId, setExpandedStationId] = useState(null);
     const [ascending, setAscending] = useState(true);
-    // Fixed maximum for distance filter in miles (a more meaningful value)
+    // Fixed maximum for distance filter in miles
     const fixedMax = 100;
 
-    // filterValues holds current changes in the popover
+    // Temporary filter values and applied filters
     const [filterValues, setFilterValues] = useState({
         distance: fixedMax,
         types: []
     });
-    // appliedFilters are used for filtering the stations displayed
     const [appliedFilters, setAppliedFilters] = useState({
         distance: fixedMax,
         types: []
@@ -69,12 +69,10 @@ function StationList({ stations, currentLocation }) {
         setAnchorElFilter(null);
     };
 
-    // Update temporary distance filter in popover
     const handleDistanceChange = (_e, newValue) => {
         setFilterValues((prev) => ({ ...prev, distance: newValue }));
     };
 
-    // Toggle type selection in temporary state
     const handleTypeToggle = (type) => {
         setFilterValues((prev) => ({
             ...prev,
@@ -84,7 +82,6 @@ function StationList({ stations, currentLocation }) {
         }));
     };
 
-    // Apply filters when "Apply" is clicked
     const handleApplyFilters = () => {
         setAppliedFilters(filterValues);
         handleFilterClose();
@@ -126,12 +123,10 @@ function StationList({ stations, currentLocation }) {
         });
     }, [stations, currentLocation, ascending]);
 
-    // Using fixed slider values for distance filtering (in miles)
     const computedMin = 0;
     const computedMax = fixedMax;
     const effectiveDistance = appliedFilters.distance;
 
-    // Filter stations using applied filters (not the temporary ones)
     const filteredStations = useMemo(() => {
         if (!currentLocation) return sortedStations;
         return sortedStations.filter((station) => {
@@ -150,7 +145,6 @@ function StationList({ stations, currentLocation }) {
         });
     }, [sortedStations, currentLocation, effectiveDistance, appliedFilters.types]);
 
-    // Use onMouseEnter/onMouseLeave to expand/collapse card on hover
     const handleMouseEnter = (stationId) => {
         setExpandedStationId(stationId);
     };
@@ -159,16 +153,21 @@ function StationList({ stations, currentLocation }) {
         setExpandedStationId(null);
     };
 
-    // Popover open state for filters
     const filterPopoverOpen = Boolean(anchorElFilter);
     const filterPopoverId = filterPopoverOpen ? 'filter-popover' : undefined;
 
+    // A helper function to display detail text with an icon.
+    // It always renders the icon, and if the value is falsy, it displays "Not Available" in green.
+
     return (
         <Box sx={{ p: 2 }}>
-            {/* Filters, Sort, and Filter Popover Trigger */}
-
+            {/* Filter/Sort Section (no box effect) */}
             <Box
                 sx={{
+                    p: 1,
+                    mb: 2,
+                    background: 'transparent',
+                    border: 'none',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -274,7 +273,7 @@ function StationList({ stations, currentLocation }) {
                 {filteredStations.map((station) => {
                     const lat = station.AddressInfo?.Latitude;
                     const lon = station.AddressInfo?.Longitude;
-                    const title = station.AddressInfo?.Title || "Unknown Station";
+                    const title = station.AddressInfo?.Title || "Not Available";
 
                     let distanceKm = null;
                     let distanceMiles = null;
@@ -308,17 +307,21 @@ function StationList({ stations, currentLocation }) {
                                         </Typography>
                                     </Box>
                                     {distanceKm !== null ? (
-                                        <Typography variant="body2" color="text.secondary">
-                                            Distance: {distanceMiles.toFixed(2)} miles
-                                        </Typography>
+                                        <Box display="flex" alignItems="center">
+                                            <StraightenIcon sx={{ mr: 0.5, color: 'text.secondary' }} />
+                                            <Typography variant="body2" color="text.secondary">
+                                                {distanceMiles.toFixed(2)} miles
+                                            </Typography>
+                                        </Box>
                                     ) : (
-                                        <Typography variant="body2" color="text.secondary">
-                                            Distance not available
+                                        <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                                            Not Available
                                         </Typography>
                                     )}
                                 </CardContent>
                                 <Collapse in={isExpanded} timeout={700} unmountOnExit>
                                     <CardContent sx={{ backgroundColor: '#f9f9f9', borderTop: '1px solid #ddd' }}>
+                                        {/* Address */}
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                             <LocationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
                                             <Typography variant="body2">
@@ -326,79 +329,86 @@ function StationList({ stations, currentLocation }) {
                                                     href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    style={{ color: "blue", textDecoration: "underline" }}
+                                                    style={{ color: "#4CAF50", textDecoration: "underline" }}
                                                 >
                                                     {station.AddressInfo
-                                                        ? `${station.AddressInfo.AddressLine1 || "N/A"}${station.AddressInfo.Town ? `, ${station.AddressInfo.Town}` : ""}${station.AddressInfo.StateOrProvince ? `, ${station.AddressInfo.StateOrProvince}` : ""}${station.AddressInfo.Postcode ? `, ${station.AddressInfo.Postcode}` : ""}${station.AddressInfo.Country && station.AddressInfo.Country.Title ? `, ${station.AddressInfo.Country.Title}` : ""}`
-                                                        : "N/A"}
+                                                        ? `${station.AddressInfo.AddressLine1 || "Not Available"}${station.AddressInfo.Town ? `, ${station.AddressInfo.Town}` : ""}${station.AddressInfo.StateOrProvince ? `, ${station.AddressInfo.StateOrProvince}` : ""}${station.AddressInfo.Postcode ? `, ${station.AddressInfo.Postcode}` : ""}${station.AddressInfo.Country && station.AddressInfo.Country.Title ? `, ${station.AddressInfo.Country.Title}` : ""}`
+                                                        : "Not Available"}
                                                 </a>
                                             </Typography>
                                         </Box>
-                                        {station.OpeningTimes && station.OpeningTimes.length > 0 && (
-                                            <Box sx={{ mt: 1 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                    <AccessTimeIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                                        Timings:
-                                                    </Typography>
+                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                            <AccessTimeIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
+                                            {/* <Typography variant="body2" sx={{ fontWeight: 'bold', color: "#4CAF50" }}>
+                                                Timings:
+                                            </Typography> */}
+                                            {station.OpeningTimes && station.OpeningTimes.length > 0 ? (
+                                                <Box sx={{ ml: 1 }}>
+                                                    {station.OpeningTimes.map((time, index) => (
+                                                        <Typography key={index} variant="body2" sx={{ color: 'text.secondary' }}>
+                                                            {time.DayOfWeek}: {time.OpeningTime} - {time.ClosingTime}
+                                                        </Typography>
+                                                    ))}
                                                 </Box>
-                                                {station.OpeningTimes.map((time, index) => (
-                                                    <Typography key={index} variant="body2" sx={{ ml: 2 }}>
-                                                        {time.DayOfWeek}: {time.OpeningTime} - {time.ClosingTime}
-                                                    </Typography>
-                                                ))}
-                                            </Box>
-                                        )}
-                                        {station.Reviews && station.Reviews.length > 0 && (
-                                            <Box sx={{ mt: 1 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                    <RateReviewIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                                        Reviews:
-                                                    </Typography>
-                                                </Box>
-                                                {station.Reviews.map((review, index) => (
-                                                    <Typography key={index} variant="body2" sx={{ ml: 2 }}>
-                                                        {review}
-                                                    </Typography>
-                                                ))}
-                                            </Box>
-                                        )}
-                                        {station.UsageCost && (
-                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                                                <MonetizationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                                <Typography variant="body2">
-                                                    {station.UsageCost}
+                                            ) : (
+                                                <Typography variant="body2" sx={{ ml: 1, color: "#4CAF50" }}>
+                                                    Not Available
                                                 </Typography>
-                                            </Box>
-                                        )}
-                                        {station.OperatorInfo && (
-                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                                                <BusinessIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                                <Typography variant="body2">
-                                                    {station.OperatorInfo.WebsiteURL ? (
+                                            )}
+                                        </Box>
+
+                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                            <ReviewsIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
+                                            {station.Reviews && station.Reviews.length > 0 ? (
+                                                <Box sx={{ ml: 1 }}>
+                                                    {station.Reviews.map((review, index) => (
+                                                        <Typography key={index} variant="body2" sx={{ color: 'text.secondary' }}>
+                                                            {review}
+                                                        </Typography>
+                                                    ))}
+                                                </Box>
+                                            ) : (
+                                                <Typography variant="body2" sx={{ ml: 1, color: "#4CAF50" }}>
+                                                    Not Available
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                        {/* Usage Cost */}
+                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                            <MonetizationOnIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
+                                            <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                                                {station.UsageCost ? station.UsageCost : "Not Available"}
+                                            </Typography>
+                                        </Box>
+                                        {/* Operator Info */}
+                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                            <BusinessIcon sx={{ mr: 0.5, color: 'primary.main' }} />
+                                            <Typography variant="body2">
+                                                {station.OperatorInfo ? (
+                                                    station.OperatorInfo.WebsiteURL ? (
                                                         <a
                                                             href={station.OperatorInfo.WebsiteURL}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            style={{ color: "blue", textDecoration: "underline" }}
+                                                            style={{ color: "#4CAF50", textDecoration: "underline" }}
                                                         >
-                                                            {station.OperatorInfo.Title}
+                                                            {station.OperatorInfo.Title || "Not Available"}
                                                         </a>
                                                     ) : (
-                                                        station.OperatorInfo.Title || "N/A"
-                                                    )}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                        {station.GeneralComments && (
-                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                                                <ChatBubbleIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                                <Typography variant="body2">
-                                                    {station.GeneralComments}
-                                                </Typography>
-                                            </Box>
-                                        )}
+                                                        station.OperatorInfo.Title || "Not Available"
+                                                    )
+                                                ) : (
+                                                    <span style={{ color: "#4CAF50" }}>Not Available</span>
+                                                )}
+                                            </Typography>
+                                        </Box>
+                                        {/* General Comments */}
+                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                            <ChatBubbleIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
+                                            <Typography variant="body2" sx={{ color: "#4CAF50" }}>
+                                                {station.GeneralComments ? station.GeneralComments : "Not Available"}
+                                            </Typography>
+                                        </Box>
                                     </CardContent>
                                 </Collapse>
                             </Card>

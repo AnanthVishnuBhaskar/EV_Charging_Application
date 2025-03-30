@@ -1,9 +1,8 @@
 import EvStationIcon from '@mui/icons-material/EvStation';
-import { Box, Container, Paper, Typography } from '@mui/material';
+import { Box, Container, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import LocationInput from './components/LocationInput';
 import StationList from './components/StationList';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 
 function App() {
@@ -41,33 +40,33 @@ function App() {
       }}
     >
       <Container maxWidth="md">
-        <Paper
+        {/* <Paper
           sx={{
             p: 3,
             backgroundColor: 'background.paper',
             boxShadow: 3,
             borderRadius: 2,
           }}
-        >
-          <Box display="flex" flexDirection="column" gap={2}>
-            {/* Header with Title and Icon */}
-            <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-              <EvStationIcon fontSize="large" color="primary" />
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-                ChargeSpot
-              </Typography>
-            </Box>
-            {/* Location Input with integrated "Locate Me" icon and separate Search button */}
-            <LocationInput
-              currentLocation={currentLocation}
-              setCurrentLocation={setCurrentLocation}
-              setStations={setStations}
-              onUseCurrentLocation={handleUseCurrentLocation}
-            />
-            {/* Station List */}
-            <StationList stations={stations} currentLocation={currentLocation} />
+        > */}
+        <Box display="flex" flexDirection="column" gap={2}>
+          {/* Header with Title and Icon */}
+          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+            <EvStationIcon fontSize="large" color="primary" />
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+              ChargeSpot
+            </Typography>
           </Box>
-        </Paper>
+          {/* Location Input with integrated "Locate Me" icon and separate Search button */}
+          <LocationInput
+            currentLocation={currentLocation}
+            setCurrentLocation={setCurrentLocation}
+            setStations={setStations}
+            onUseCurrentLocation={handleUseCurrentLocation}
+          />
+          {/* Station List */}
+          <StationList stations={stations} currentLocation={currentLocation} />
+        </Box>
+        {/* </Paper> */}
       </Container>
     </Box>
   );
