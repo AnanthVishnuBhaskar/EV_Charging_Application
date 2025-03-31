@@ -1,11 +1,13 @@
 // src/components/StationList.jsx
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import BusinessIcon from '@mui/icons-material/Business';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import ElectricCarIcon from '@mui/icons-material/ElectricCar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import ReviewsIcon from '@mui/icons-material/Reviews';
+import ReviewsIcon from '@mui/icons-material/RateReview';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -26,25 +28,40 @@ import {
 } from '@mui/material';
 import React, { useMemo, useState } from 'react';
 
+// Helper: calculates distance between two coordinates (in km)
 function haversineDistance(lat1, lon1, lat2, lon2) {
     const toRad = (x) => (x * Math.PI) / 180;
-    const R = 6371;
+    const R = 6371; // Earth's radius in km
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
+// DetailRow renders an icon alongside a text value.
+// If value is falsy, it displays "Not Available" in green.
+const DetailRow = ({ IconComponent, value, fallback = "Not Available" }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+        <IconComponent sx={{ mr: 0.5, color: 'primary.main' }} />
+        <Typography variant="body2" sx={{ color: value ? 'text.secondary' : "#4CAF50" }}>
+            {value ? value : fallback}
+        </Typography>
+    </Box>
+);
+
 function StationList({ stations, currentLocation }) {
+    // Card expansion state for hover effect
     const [expandedStationId, setExpandedStationId] = useState(null);
     const [ascending, setAscending] = useState(true);
     // Fixed maximum for distance filter in miles
     const fixedMax = 100;
 
-    // Temporary filter values and applied filters
+    // Temporary filter state and applied filters
     const [filterValues, setFilterValues] = useState({
         distance: fixedMax,
         types: []
@@ -56,6 +73,10 @@ function StationList({ stations, currentLocation }) {
 
     // For the filter popover
     const [anchorElFilter, setAnchorElFilter] = useState(null);
+
+    // Pagination: show 10 items per page
+    const itemsPerPage = 10;
+    const [currentPage, setCurrentPage] = useState(1);
 
     const toggleSortOrder = () => {
         setAscending((prev) => !prev);
@@ -84,6 +105,7 @@ function StationList({ stations, currentLocation }) {
 
     const handleApplyFilters = () => {
         setAppliedFilters(filterValues);
+        setCurrentPage(1); // Reset to first page when filters are applied
         handleFilterClose();
     };
 
@@ -145,10 +167,25 @@ function StationList({ stations, currentLocation }) {
         });
     }, [sortedStations, currentLocation, effectiveDistance, appliedFilters.types]);
 
+    // Pagination: compute stations for the current page
+    const paginatedStations = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredStations.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredStations, currentPage]);
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < Math.ceil(filteredStations.length / itemsPerPage))
+            setCurrentPage((prev) => prev + 1);
+    };
+
+    // Expand/collapse only the card being hovered
     const handleMouseEnter = (stationId) => {
         setExpandedStationId(stationId);
     };
-
     const handleMouseLeave = () => {
         setExpandedStationId(null);
     };
@@ -156,12 +193,31 @@ function StationList({ stations, currentLocation }) {
     const filterPopoverOpen = Boolean(anchorElFilter);
     const filterPopoverId = filterPopoverOpen ? 'filter-popover' : undefined;
 
-    // A helper function to display detail text with an icon.
-    // It always renders the icon, and if the value is falsy, it displays "Not Available" in green.
+    // Calculate the results count text in the format "X–Y of Z"
+    const totalResults = filteredStations.length;
+    const startResult = totalResults === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endResult = Math.min(currentPage * itemsPerPage, totalResults);
+    const resultsText = `${startResult}–${endResult} of ${totalResults}`;
 
     return (
         <Box sx={{ p: 2 }}>
-            {/* Filter/Sort Section (no box effect) */}
+            {/* Results Count with arrow buttons at top right */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 1 }}>
+                <IconButton onClick={handlePrevPage} disabled={currentPage === 1}>
+                    <ArrowBackIosNewIcon fontSize="small" />
+                </IconButton>
+                <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>
+                    {resultsText}
+                </Typography>
+                <IconButton
+                    onClick={handleNextPage}
+                    disabled={currentPage >= Math.ceil(filteredStations.length / itemsPerPage)}
+                >
+                    <ArrowForwardIosIcon fontSize="small" />
+                </IconButton>
+            </Box>
+
+            {/* Filter/Sort Section */}
             <Box
                 sx={{
                     p: 1,
@@ -213,7 +269,6 @@ function StationList({ stations, currentLocation }) {
                         value={filterValues.distance}
                         onChange={handleDistanceChange}
                         valueLabelDisplay="auto"
-                        valueLabelFormat={(value) => `${value} miles`}
                         min={computedMin}
                         max={computedMax}
                         step={1}
@@ -221,15 +276,10 @@ function StationList({ stations, currentLocation }) {
                             color: 'primary.main',
                             '& .MuiSlider-valueLabel': {
                                 backgroundColor: 'primary.main',
-                                borderRadius: '50%',
+                                borderRadius: '60%',
                                 color: 'white',
-                                width: 32,
-                                height: 32,
-                                display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '0.75rem',
-                                transform: 'translateX(-50%) translateY(-120%) scale(1)',
                             },
                         }}
                     />
@@ -251,7 +301,6 @@ function StationList({ stations, currentLocation }) {
                             }
                             label={type}
                             sx={{
-                                alignItems: 'flex-start',
                                 '& .MuiFormControlLabel-label': {
                                     marginTop: '0.2em',
                                     lineHeight: '1.2',
@@ -270,7 +319,7 @@ function StationList({ stations, currentLocation }) {
 
             {/* Station Cards */}
             <Grid container spacing={2}>
-                {filteredStations.map((station) => {
+                {paginatedStations.map((station) => {
                     const lat = station.AddressInfo?.Latitude;
                     const lon = station.AddressInfo?.Longitude;
                     const title = station.AddressInfo?.Title || "Not Available";
@@ -322,26 +371,17 @@ function StationList({ stations, currentLocation }) {
                                 <Collapse in={isExpanded} timeout={700} unmountOnExit>
                                     <CardContent sx={{ backgroundColor: '#f9f9f9', borderTop: '1px solid #ddd' }}>
                                         {/* Address */}
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                            <LocationOnIcon sx={{ mr: 0.5, color: 'primary.main' }} />
-                                            <Typography variant="body2">
-                                                <a
-                                                    href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    style={{ color: "#4CAF50", textDecoration: "underline" }}
-                                                >
-                                                    {station.AddressInfo
-                                                        ? `${station.AddressInfo.AddressLine1 || "Not Available"}${station.AddressInfo.Town ? `, ${station.AddressInfo.Town}` : ""}${station.AddressInfo.StateOrProvince ? `, ${station.AddressInfo.StateOrProvince}` : ""}${station.AddressInfo.Postcode ? `, ${station.AddressInfo.Postcode}` : ""}${station.AddressInfo.Country && station.AddressInfo.Country.Title ? `, ${station.AddressInfo.Country.Title}` : ""}`
-                                                        : "Not Available"}
-                                                </a>
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                        <DetailRow
+                                            IconComponent={LocationOnIcon}
+                                            value={
+                                                station.AddressInfo
+                                                    ? `${station.AddressInfo.AddressLine1 || ""}${station.AddressInfo.Town ? `, ${station.AddressInfo.Town}` : ""}${station.AddressInfo.StateOrProvince ? `, ${station.AddressInfo.StateOrProvince}` : ""}${station.AddressInfo.Postcode ? `, ${station.AddressInfo.Postcode}` : ""}${station.AddressInfo.Country && station.AddressInfo.Country.Title ? `, ${station.AddressInfo.Country.Title}` : ""}`
+                                                    : null
+                                            }
+                                        />
+                                        {/* Timings */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <AccessTimeIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
-                                            {/* <Typography variant="body2" sx={{ fontWeight: 'bold', color: "#4CAF50" }}>
-                                                Timings:
-                                            </Typography> */}
                                             {station.OpeningTimes && station.OpeningTimes.length > 0 ? (
                                                 <Box sx={{ ml: 1 }}>
                                                     {station.OpeningTimes.map((time, index) => (
@@ -356,8 +396,8 @@ function StationList({ stations, currentLocation }) {
                                                 </Typography>
                                             )}
                                         </Box>
-
-                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                        {/* Reviews */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <ReviewsIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
                                             {station.Reviews && station.Reviews.length > 0 ? (
                                                 <Box sx={{ ml: 1 }}>
@@ -374,14 +414,14 @@ function StationList({ stations, currentLocation }) {
                                             )}
                                         </Box>
                                         {/* Usage Cost */}
-                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <MonetizationOnIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
                                             <Typography variant="body2" sx={{ color: "#4CAF50" }}>
                                                 {station.UsageCost ? station.UsageCost : "Not Available"}
                                             </Typography>
                                         </Box>
                                         {/* Operator Info */}
-                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <BusinessIcon sx={{ mr: 0.5, color: 'primary.main' }} />
                                             <Typography variant="body2">
                                                 {station.OperatorInfo ? (
@@ -403,7 +443,7 @@ function StationList({ stations, currentLocation }) {
                                             </Typography>
                                         </Box>
                                         {/* General Comments */}
-                                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                             <ChatBubbleIcon sx={{ mr: 0.5, color: "#4CAF50" }} />
                                             <Typography variant="body2" sx={{ color: "#4CAF50" }}>
                                                 {station.GeneralComments ? station.GeneralComments : "Not Available"}
@@ -416,6 +456,24 @@ function StationList({ stations, currentLocation }) {
                     );
                 })}
             </Grid>
+
+            {/* Pagination Arrows (if more than one page) */}
+            {filteredStations.length > itemsPerPage && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 2 }}>
+                    <IconButton onClick={handlePrevPage} disabled={currentPage === 1}>
+                        <ArrowBackIosNewIcon fontSize="small" />
+                    </IconButton>
+                    <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>
+                        {resultsText}
+                    </Typography>
+                    <IconButton
+                        onClick={handleNextPage}
+                        disabled={currentPage >= Math.ceil(filteredStations.length / itemsPerPage)}
+                    >
+                        <ArrowForwardIosIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            )}
         </Box>
     );
 }

@@ -155,34 +155,34 @@ function LocationInput({ currentLocation, setCurrentLocation, setStations, onUse
                         </InputAdornment>
                     ),
                 }}
-                sx={{
-                    // Remove any default background or shadow from the TextField container:
-                    backgroundColor: 'transparent',
-                    boxShadow: 'none',
+            sx={{
+                // Remove any default background or shadow from the TextField container:
+                backgroundColor: 'transparent',
+                boxShadow: 'none',
 
-                    // Focus-within shadow if desired:
-                    '&:focus-within': { boxShadow: '0 0 10px rgba(0,0,0,0.3)' },
+                // Focus-within shadow if desired:
+                // '&:focus-within': { boxShadow: '0 0 10px rgba(0,0,0,0.3)' },
 
-                    // Target the OutlinedInput root:
-                    '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'transparent', // remove white background
-                        borderRadius: 2,
-                        '& fieldset': {
-                            borderColor: '#4CAF50',       // default outline color
-                        },
-                        '&:hover fieldset': {
-                            borderColor: '#4CAF50',       // hover outline color
-                        },
-                        '&.Mui-focused fieldset': {
-                            borderColor: '#4CAF50',       // focused outline color
-                        },
+                // Target the OutlinedInput root:
+                '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'transparent', // remove white background
+                    borderRadius: 2,
+                    '& fieldset': {
+                        borderColor: '#4CAF50',       // default outline color
                     },
-
-                    // If you want the label to be green when focused:
-                    '& .MuiFormLabel-root.Mui-focused': {
-                        color: '#4CAF50',
+                    '&:hover fieldset': {
+                        borderColor: '#4CAF50',       // hover outline color
                     },
-                }}
+                    '&.Mui-focused fieldset': {
+                        borderColor: '#4CAF50',       // focused outline color
+                    },
+                },
+
+                // If you want the label to be green when focused:
+                '& .MuiFormLabel-root.Mui-focused': {
+                    color: '#4CAF50',
+                },
+            }}
             />
 
 

@@ -32,9 +32,9 @@ async def get_charging_stations(location: LocationRequest):
         "output": "json",
         "latitude": location.latitude,
         "longitude": location.longitude,
-        "distance": 10,  # Distance in kilometers
+        "distance": 100,  # Distance in kilometers
         "distanceunit": "KM",
-        "maxresults": 10,
+        "maxresults": 100,
         # Optionally, include your API key:
         "key": "f25176bd-51e7-443c-bb91-50df6cc5cd51",
     }
